@@ -2,7 +2,9 @@ import datetime
 import itertools
 import pickle
 import warnings
-
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.api as sm
 from dateutil.relativedelta import relativedelta
@@ -81,7 +83,8 @@ def allowed_file(filename):
 
 
 def create_pickle(df):
-    traindata = df.sample(frac=0.7)
+
+    traindata = df
     traindata = traindata.set_index('Tarih')
     traindata.index = pd.to_datetime(traindata.index, unit='ns')
     print(traindata.index)
@@ -115,17 +118,47 @@ def create_pickle(df):
                                     enforce_invertibility=False)
     results = mod.fit()
     print(results)
-
-    dt_string = "2017/06/22 00:00:00.0"
-    dt_string2 = "2017/06/30 00:00:00.0"
-
-    # Considering date is in dd/mm/yyyy format
-    dt_object1 = datetime.strptime(dt_string, '%Y/%m/%d %H:%M:%S.%f')
-    dt_object2 = datetime.strptime(dt_string2, '%Y/%m/%d %H:%M:%S.%f')
-    pred = results.get_prediction(start=pd.to_datetime(dt_object1), end=pd.to_datetime(dt_object2))
+    #
+    # dt_string = "2017/02/05 00:00:00.0"
+    # dt_string2 = "2017/02/09 00:00:00.0"
+    #
+    # # Considering date is in dd/mm/yyyy format
+    # dt_object1 = datetime.strptime(dt_string, '%Y/%m/%d %H:%M:%S.%f')
+    # dt_object2 = datetime.strptime(dt_string2, '%Y/%m/%d %H:%M:%S.%f')
+    # pred = results.get_prediction(start=50, end=55)
+    pred = results.get_prediction(start=pd.to_datetime('2017/02/05'),end=pd.to_datetime('2017/07/09'), dynamic=False)
 
     pred_ci = pred.conf_int()
+    print('ilk')
     print(pred_ci)
+    ax = traindata['2017-01':].plot(label='Öngörülen Veriler')
+    pred.predicted_mean.plot(ax=ax, label='Tahminlenen kısım', alpha=.7, figsize=(12, 4))
+    ax.fill_between(pred_ci.index,
+                    pred_ci.iloc[:, 0],
+                    pred_ci.iloc[:, 1], color='k', alpha=.2)
+    ax.set_xlabel('Tahmini Tarihler')
+    ax.set_ylabel('Disk Boyutu')
+    plt.title('\nTahmin Sonuçları\n')
+    plt.legend()
+    plt.show()
+    # Get forecast 500 steps ahead in future
+    pred_uc = results.get_forecast(steps=500)
+
+    # Get confidence intervals of forecasts
+    pred_uc = pred_uc.conf_int()
+    print('ikinci')
+
+    print(pred_uc)
+    ax = traindata['2017-06':].plot(label='Öngörülen Veriler')
+    pred.predicted_mean.plot(ax=ax, label='Tahminlenen kısım', alpha=.7, figsize=(12, 4))
+    ax.fill_between(pred_ci.index,
+                    pred_ci.iloc[:, 0],
+                    pred_ci.iloc[:, 1], color='k', alpha=.2)
+    ax.set_xlabel('Tahmini Tarihler')
+    ax.set_ylabel('Disk ')
+    plt.title('\nTahmin Sonuçları\n')
+    plt.legend()
+    plt.show()
 
     # # render dataframe as html
     # html = pred_ci.to_html()
@@ -135,37 +168,36 @@ def create_pickle(df):
     # text_file.write(html)
     # text_file.close()
 
+    conf_date = pred.conf_int().index
+    conf_lower = pred.conf_int()['lower Inbound']
+    conf_upper = pred.conf_int()['upper Inbound']
+    conf_mean = (conf_upper + conf_lower) / 2
 
-    # conf_date = pred.conf_int().index
-    # conf_lower = pred.conf_int()['lower size']
-    # conf_upper = pred.conf_int()['upper size']
-    # conf_mean = (conf_upper + conf_lower) / 2
-    #
-    # results_df = pd.DataFrame({
-    #     "conf_date": conf_date,
-    #     "conf_lower": conf_lower,
-    #     "conf_upper": conf_upper,
-    #     "conf_mean": conf_mean
-    # })
-    # results_df.index = pd.to_datetime(results_df.index)
-    # print(results_df)
-    # return results_df
-    # dictionary = {
-    #     'date': [],
-    #     'lower': [],
-    #     'upper': [],
-    #     'mean': []
-    # }
-    # results_df.reset_index(drop=True, inplace=True)
-    # results_df.set_index('conf_date')
-    #
-    # dictionary = results_df.to_dict(orient='records')
-    #
-    # for key in dictionary:
-    #     date_time = key['conf_date'].strftime("%m/%d/%Y, %H:%M:%S")
-    #     key['conf_date'] = date_time
-    # dictionary = str(dictionary)
-    # return dictionary
+    results_df = pd.DataFrame({
+        "conf_date": conf_date,
+        "conf_lower": conf_lower,
+        "conf_upper": conf_upper,
+        "conf_mean": conf_mean
+    })
+    results_df.index = pd.to_datetime(results_df.index)
+    print(results_df)
+    dictionary = {
+        'date': [],
+        'lower': [],
+        'upper': [],
+        'mean': []
+    }
+    results_df.reset_index(drop=True, inplace=True)
+    results_df.set_index('conf_date')
+
+
+    dictionary = results_df.to_dict(orient='records')
+
+    for key in dictionary:
+        date_time = key['conf_date'].strftime("%m/%d/%Y, %H:%M:%S")
+        key['conf_date'] = date_time
+    dictionary = str(dictionary)
+    return dictionary
 
 
 # def predict_model_(dataframe, content, results):
@@ -249,6 +281,7 @@ def initial():
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    global dataframe
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -266,35 +299,32 @@ def upload_file():
             filename = file.filename
             print('{} isimli dosya yuklendi'.format(filename))
             print(dataframe)
-        if 'submit-button' in request.form:
-            user_answer = request.form['month']
-            if user_answer == 'one':
-                lastdate = dataframe["Tarih"].iloc[-1]
-                # content = {
-                #     "start_date": "2020-05-07 00:00:00.0",
-                #     "end_date": "2020-05-07 00:00:00.0"
-                # }
+            if 'submit-button' in request.form:
+                user_answer = request.form['month']
+                if user_answer == 'one':
+                    lastdate = dataframe["Tarih"].iloc[-1]
+                    # content = {
+                    #     "start_date": "2020-05-07 00:00:00.0",
+                    #     "end_date": "2020-05-07 00:00:00.0"
+                    # }
 
-                create_pickle(dataframe)
+                    dict = create_pickle(dataframe)
+                    return dict
+                if user_answer == 'three':
+                    dataframe['Tarih'] = pd.to_datetime(dataframe['Tarih'])
+                    lastdate = dataframe["Tarih"].iloc[-1]
+                    use_date = lastdate + relativedelta(months=+1)
+                    print(dataframe.dtypes)
+                    print(dataframe)
+                    return use_date
+                if user_answer == 'six':
+                    lastdate = dataframe["Tarih"].iloc[-1]
+                    return lastdate
 
-                # results = create_model(dataframe, trainer)
-                # predict_model_(dataframe, content, results)
-            if user_answer == 'three':
-                dataframe['Tarih'] = pd.to_datetime(dataframe['Tarih'])
-                lastdate = dataframe["Tarih"].iloc[-1]
-                use_date = lastdate + relativedelta(months=+1)
-                print(dataframe.dtypes)
-                print(dataframe)
-                return use_date
-            if user_answer == 'six':
-                lastdate = dataframe["Tarih"].iloc[-1]
-                return lastdate
-
-    # predict_model_(dataframe,)
+        # predict_model_(dataframe,)
 
 
 def main():
-    # log.info('>>>>> Starting development server at http://{}/api/ <<<<<'.format(app.config['SERVER_NAME']))
     app.run(debug=True)
 
 
