@@ -5,24 +5,47 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>ARIMA MODEL</title>
+    <style>
+        body {
+            background-color: azure;
+        }
+    </style>
 </head>
 <body>
 
     <form method=post enctype=multipart/form-data action = "http://localhost:5000/upload">
-      <input type=file name=file>
+      <input style="margin-left: 500px;" type=file name=file>
 
     <br><br>
-  <input type="radio" id="onemonth" name="month" value="one">
-  <label for="male">1 Aylik</label><br>
-  <input type="radio" id="threemonth" name="month" value="three">
-  <label for="female">3 Aylik</label><br>
-  <input type="radio" id="sixmonth" name="month" value="six">
-  <label for="other">6 Aylik</label>
-    <br><br>
-  <input id="submitbutton" type="submit" value="Submit" name="submit-button">
-<p>This is a paragraph.</p>
+      <input style="margin-left: 550px;" type="radio" id="onemonth" name="month" value="one">
+      <label style="font-size: 20px;margin-left: 10px;" for="male">1 Aylik</label><br>
+      <input style="margin-left: 550px;" type="radio" id="threemonth" name="month" value="three">
+      <label style="font-size: 20px;margin-left: 10px;" for="female">3 Aylik</label><br>
+      <input style="margin-left: 550px;" type="radio" id="sixmonth" name="month" value="six">
+      <label style="font-size: 20px;margin-left: 10px;" for="other">6 Aylik</label>
+        <br><br>
+  <input style="margin-left: 550px;
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;" id="submitbutton" type="submit" value="Submit" name="submit-button">
 
-        </form>
+          <input style="margin-left: 550px;
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;" id="deletebutton" type="submit" value="del" name="delete-button">
+
 </body>
 </html>
