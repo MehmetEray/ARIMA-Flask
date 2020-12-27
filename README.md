@@ -6,3 +6,4 @@ https://www.sinanerdinc.com/python-virtualenv-kullanimi
 pip install -r requirements.txt
 
 then run program
+.
